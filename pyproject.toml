@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "cv-parser"
+version = "0.1.0"
+description = ""
+authors = ["Andrew Sameh <g.andrewsameh@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+langchain = "0.2.16"
+langchain-community = "0.2.16"
+langchain-openai = "0.1.23"
+langgraph = "0.2.73"
+langsmith = "0.1.114"
+pdfplumber = "^0.11.5"
+python-dotenv = "^1.0.1"
+pydantic = "2.10.6"
+pydantic-settings = "^2.7.1"
+uvloop = "^0.21.0"
+httpx = "^0.28.1"
+pytest = "^8.3.4"
+uvicorn = "^0.34.0"
+fastapi = "^0.115.8"
+structlog = "^25.1.0"
+asgi-correlation-id = "^4.3.4"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
