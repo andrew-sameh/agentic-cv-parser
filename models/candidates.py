@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -7,13 +7,13 @@ from sqlalchemy import (
     String,
     func,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 from . import Base
 
 
-class Candidates(Base):
+class Candidate(Base):
     __tablename__ = "candidates"
 
     id: Mapped[int] = mapped_column(Integer, nullable=False, primary_key=True, autoincrement=True, index=True)
@@ -24,9 +24,44 @@ class Candidates(Base):
     phone: Mapped[str] = mapped_column(String(15), nullable=True)
     hired: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     status: Mapped[str] = mapped_column(String(15), nullable=True)
+    resume_url: Mapped[str] = mapped_column(String(100), nullable=True)
+    embeddings_namespace: Mapped[str] = mapped_column(String(100), nullable=True, unique=True, index=True)
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=func.current_timestamp()
     )
+
+    # Relationships
+    educations: Mapped[List["Education"]] = relationship( # noqa
+        "Education",
+        back_populates="candidate",
+        cascade="all, delete-orphan"
+    )
+
+    experiences: Mapped[List["Experience"]] = relationship( # noqa
+        "Experience",
+        back_populates="candidate",
+        cascade="all, delete-orphan"
+    )
+
+    projects: Mapped[List["Project"]] = relationship( # noqa
+        "Project",
+        back_populates="candidate",
+        cascade="all, delete-orphan"
+    )
+
+    certifications: Mapped[List["Certification"]] = relationship( # noqa
+        "Certification",
+        back_populates="candidate",
+        cascade="all, delete-orphan"
+    )
+
+    # If using a many-to-many for skills:
+    skills: Mapped[List["Skill"]] = relationship( # noqa
+        "Skill",
+        secondary="candidate_skills",   # name of the association table
+        back_populates="candidates"
+    )
+    

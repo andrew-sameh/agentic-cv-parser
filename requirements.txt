@@ -32,6 +32,7 @@ eval_type_backport==0.2.2
 executing==2.2.0
 fastapi==0.115.8
 fastapi-limiter==0.1.6
+fastapi-pagination==0.12.34
 filetype==1.2.0
 frozenlist==1.5.0
 greenlet==3.1.1

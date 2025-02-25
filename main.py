@@ -15,6 +15,7 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
+from fastapi_pagination import  add_pagination
 
 # from agent.workflow import ResearchAgent
 from api.router import router as api_router
@@ -55,6 +56,7 @@ app = FastAPI(
     docs_url="/",
 )
 
+add_pagination(app)  
 
 app.add_middleware(ServerErrorMiddleware)
 
