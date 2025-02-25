@@ -5,12 +5,12 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 import structlog
 
-logger = structlog.get_logger()
+logger = structlog.stdlib.get_logger()
 
 
 async def handle_validation_exception(request: Request, exc: RequestValidationError):
     detail = exc.errors()
-    logger.error(
+    await logger.error(
         "Validation Error",
         error=str(exc.__class__.__name__),
         error_info=detail,
@@ -28,7 +28,7 @@ async def handle_validation_exception(request: Request, exc: RequestValidationEr
 
 async def handle_timeout_exception(request: Request, exc: asyncio.TimeoutError):
     stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-    logger.error(
+    await logger.error(
         "Timeout Error",
         error=str(exc.__class__.__name__),
         error_info=stack_trace,
@@ -45,7 +45,7 @@ async def handle_timeout_exception(request: Request, exc: asyncio.TimeoutError):
 
 async def handle_value_error(request: Request, exc: ValueError):
     stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-    logger.error(
+    await logger.error(
         "Value Error",
         error=str(exc.__class__.__name__),
         error_info=stack_trace,
@@ -63,7 +63,7 @@ async def handle_value_error(request: Request, exc: ValueError):
 
 async def handle_bad_request(request: Request, exc: AttributeError):
     stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-    logger.error(
+    await logger.error(
         "Bad Request",
         error=str(exc.__class__.__name__),
         error_info=stack_trace,
@@ -80,7 +80,7 @@ async def handle_bad_request(request: Request, exc: AttributeError):
 
 
 async def handle_http_exception(request: Request, exc: HTTPException):
-    logger.error(
+    await logger.error(
         "HTTP Exception",
         error=str(exc.__class__.__name__),
         error_info=exc.detail,

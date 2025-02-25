@@ -1,20 +1,10 @@
 # https://github.com/Longdh57/fastapi-minio
 
 from utils.uuid6 import uuid7
-from pydantic import BaseModel
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
-from datetime import datetime, timedelta
-
-
-class IS3Response(BaseModel):
-    bucket_name: str
-    file_name: str
-    url: str
-    # presigned_url: str
-    # exp: int | None = None
-    is_public: bool
-
+from datetime import timedelta
+from core.config import settings
 
 class S3Client:
     def __init__(
@@ -22,10 +12,10 @@ class S3Client:
         aws_access_key_id: str,
         aws_secret_access_key: str,
         region_name: str,
-        private_bucket_name: str,
-        public_bucket_name: str,
+        bucket_name: str,
         base_folder: str,
         environment: str,
+        private_bucket_name: str | None = None,
     ):
         self.s3 = boto3.client(
             "s3",
@@ -34,7 +24,7 @@ class S3Client:
             region_name=region_name,
         )
         self.private_bucket_name = private_bucket_name
-        self.public_bucket_name = public_bucket_name
+        self.public_bucket_name = bucket_name
         self.base_folder = base_folder
         self.environment = environment
         # self.create_buckets(
@@ -107,7 +97,7 @@ class S3Client:
         sub_entity: str = None,
         category: str = None,
         is_public: bool = False,
-    ) -> IS3Response:
+    ) -> str:
         """
         Uploads an object to an S3 bucket.
 
@@ -118,7 +108,7 @@ class S3Client:
             entity (str): The main category that the file belongs to. For example, "blog_images".
             sub_entity (str, optional): A sub-category under the main entity. For example, if the entity is "blog_images", sub_entity could be "travel". Defaults to None.
             category (str, optional): A further classification under the sub-entity. For example, under the "travel" sub-entity, category could be "Europe". Defaults to None.
-            is_public (bool, optional): Whether the file should be publicly accessible. Defaults to False.
+            is_public (bool, optional): Whether the file should be publicly accessible. Defaults to True.
 
         Returns:
             IS3Response: An instance of IS3Response containing details of the uploaded file.
@@ -174,14 +164,21 @@ class S3Client:
             #     if not is_public
             #     else None
             # )
-            data_file = IS3Response(
-                bucket_name=bucket_name,
-                file_name=object_name,
-                url=url,
-                # exp=exp,
-                is_public=is_public,
-                # presigned_url=presigned_url,
-            )
-            return data_file
+            return url
         except NoCredentialsError as e:
             print(f"[x] No credentials error: {e}")
+
+
+def get_s3_client():
+    # check if S3 is enabled
+    if not settings.S3_ENABLED:
+        return None
+    return S3Client(
+        aws_access_key_id=settings.AWS_S3_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_S3_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME,
+        private_bucket_name=settings.AWS_S3_BUCKET_NAME_PRIVATE,
+        public_bucket_name=settings.AWS_S3_BUCKET_NAME,
+        base_folder=settings.AWS_S3_BASE_FOLDER,
+        environment=settings.ENV,
+    )

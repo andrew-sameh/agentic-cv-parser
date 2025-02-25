@@ -35,6 +35,14 @@ boto3 = "^1.36.26"
 fastapi-limiter = "^0.1.6"
 redis = "5.2.1"
 jwt = "^1.3.1"
+alembic = "^1.14.1"
+asyncpg = "^0.30.0"
+sqlalchemy = "^2.0.38"
+sqlalchemy-utils = "^0.41.2"
+pytest-asyncio = "^0.25.3"
+greenlet = "^3.1.1"
+email-validator = "^2.2.0"
+tzdata = "^2025.1"
 
 
 [tool.poetry.group.dev.dependencies]

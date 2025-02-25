@@ -5,7 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import structlog
 import traceback
 
-logger = structlog.get_logger()
+logger = structlog.stdlib.get_logger()
 
 
 class ServerErrorMiddleware(BaseHTTPMiddleware):
@@ -17,7 +17,7 @@ class ServerErrorMiddleware(BaseHTTPMiddleware):
             stack_trace = "".join(
                 traceback.format_exception(type(exc), exc, exc.__traceback__)
             )
-            logger.error(
+            await logger.error(
                 "Server Error",
                 error=str(exc.__class__.__name__),
                 error_info=stack_trace,

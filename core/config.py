@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # CORE SETTINGS
-    ENV: str = "DEV"  # DEV, PROD
+    ENV: str = "dev"  # dev, prod 
     PROJECT_NAME: str = "CV Parser API"
     VERSION: str = "0.1.0"
     DESCRIPTION: str = "An API for an agentic CV Parser"
@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     EMBEDDINGS_MODEL: str = "text-embedding-3-small"
 
     # Embeddings
-    PINECODE_API_KEY: str
-    PINECODE_INDEX_NAME: str
+    PINECONE_API_KEY: str
+    PINECONE_INDEX_NAME: str
     EMBEDDING_SEARCH_TYPE: str = ""
     EMBEDDING_SCORE_THRESHOLD: float = 0.1
     EMBEDDING_TOPK: int = 3
@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     DATABASE_PASSWORD: str
     DATABASE_HOSTNAME: str
     DATABASE_PORT: int
-    DATABASE_DB: str
+    DATABASE_NAME: str
+    ECHO_SQL: bool = False
 
     # Redis
     REDIS_HOST: str
@@ -42,15 +43,30 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
 
     # AWS S3
-    # AWS_S3_BUCKET_NAME:str
-    # AWS_S3_ACCESS_KEY_ID:str
-    # AWS_S3_SECRET_ACCESS_KEY:str
-    # AWS_S3_REGION_NAME:str
-    # AWS_S3_BASE_FOLDER:str
-
+    AWS_S3_BUCKET_NAME:str | None = None
+    AWS_S3_ACCESS_KEY_ID:str | None = None
+    AWS_S3_SECRET_ACCESS_KEY:str | None = None
+    AWS_S3_REGION_NAME:str | None = None
+    AWS_S3_BASE_FOLDER:str | None = None
+    AWS_S3_BUCKET_NAME_PRIVATE:str | None = None
+    
+    
     @computed_field
     @cached_property
-    def DEFAULT_SQLALCHEMY_DATABASE_URI(self) -> str:
+    def S3_ENABLED(self) -> bool:
+        return all(
+            [
+                self.AWS_S3_BUCKET_NAME,
+                self.AWS_S3_ACCESS_KEY_ID,
+                self.AWS_S3_SECRET_ACCESS_KEY,
+                self.AWS_S3_REGION_NAME,
+                self.AWS_S3_BASE_FOLDER,
+            ]
+        )
+    
+    @computed_field
+    @cached_property
+    def DATABASE_URI(self) -> str:
         return str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
@@ -58,7 +74,7 @@ class Settings(BaseSettings):
                 password=self.DATABASE_PASSWORD,
                 host=self.DATABASE_HOSTNAME,
                 port=self.DATABASE_PORT,
-                path=self.DATABASE_DB,
+                path=self.DATABASE_NAME,
             )
         )
 

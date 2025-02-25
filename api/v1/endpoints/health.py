@@ -16,6 +16,6 @@ logger = structlog.stdlib.get_logger()
     status_code=200,
 )
 async def health_check():
-    res = HealthCheck(message="Hello, I am alive!")
-    await logger.info("Someone checked the health of the API")
+    res = HealthCheck(message="Hello, I am alive and well!")
+    await logger.info("Someone checked the health of the API!")
     return create_response(data=res)

@@ -24,7 +24,7 @@ def drop_color_message_key(_, __, event_dict: EventDict) -> EventDict:
     event_dict.pop("color_message", None)
     return event_dict
 
-def configure_logger(enable_json_logs: bool = False):
+def configure_logger(log_level:str = "INFO", enable_json_logs: bool = False):
     timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
 
     shared_processors = [
@@ -67,6 +67,7 @@ def configure_logger(enable_json_logs: bool = False):
         logger_factory=structlog.stdlib.LoggerFactory(),
         # call log with await syntax in thread pool executor
         wrapper_class=structlog.stdlib.AsyncBoundLogger,
+        # wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
 
@@ -76,10 +77,10 @@ def configure_logger(enable_json_logs: bool = False):
         else structlog.dev.ConsoleRenderer(colors=True)
     )
 
-    _configure_default_logging_by_custom(shared_processors, logs_render)
+    _configure_default_logging_by_custom(shared_processors, logs_render, log_level)
 
 
-def _configure_default_logging_by_custom(shared_processors, logs_render):
+def _configure_default_logging_by_custom(shared_processors, logs_render, log_level="INFO"):
     handler = logging.StreamHandler()
 
     # Use `ProcessorFormatter` to format all `logging` entries.
@@ -96,7 +97,7 @@ def _configure_default_logging_by_custom(shared_processors, logs_render):
     root_uvicorn_logger = logging.getLogger()
     root_uvicorn_logger.handlers.clear()
     root_uvicorn_logger.addHandler(handler)
-    root_uvicorn_logger.setLevel(logging.INFO)
+    root_uvicorn_logger.setLevel(log_level.upper())
 
     # for _log in ["uvicorn", "uvicorn.error"]:
         # Clear the log handlers for uvicorn loggers, and enable propagation

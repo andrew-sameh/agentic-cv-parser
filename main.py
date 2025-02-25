@@ -16,7 +16,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
 
-from agent.workflow import ResearchAgent
+# from agent.workflow import ResearchAgent
 from api.router import router as api_router
 from core.config import settings
 from utils.exceptions.global_exceptions import (
@@ -31,7 +31,7 @@ from utils.logger import configure_logger
 from utils.middlewares.server_error import ServerErrorMiddleware
 from utils.redis import get_redis_client
 
-configure_logger()
+configure_logger(settings.LOG_LEVEL, settings.LOG_JSON_ENABLED)
 
 
 @asynccontextmanager
@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
     try:
         redis_client = await get_redis_client()
         await FastAPILimiter.init(redis_client, identifier=user_id_identifier)
-        app.state.graph = ResearchAgent()
+        # app.state.graph = ResearchAgent()
         yield
 
         await FastAPILimiter.close()
@@ -108,7 +108,7 @@ app.add_exception_handler(HTTPException, handle_http_exception)
 app.include_router(api_router)
 
 if __name__ == "__main__":
-    if settings.ENV == "DEV":
-        uvicorn.run("main:app", host="0.0.0.0", port=8000, log_config=None, reload=True)
+    if settings.ENV == "dev":
+        uvicorn.run("main:app", host="0.0.0.0", port=8000,log_config=None, reload=True)
     else:
         uvicorn.run("main:app", host="0.0.0.0", port=8000, log_config=None)
