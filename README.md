@@ -93,6 +93,11 @@ poetry install
 cp .env.example .env
 # Edit .env with your configuration
 ```
+4. Run the application:
+
+```bash
+poetry run python main.py 
+```
 
 ### Using pip
 
@@ -107,6 +112,18 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 ```bash
 pip install -r requirements.txt
+```
+3. Set up environment variables:
+
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+4. Run the application:
+
+```bash
+python main.py
 ```
 
 ### Using Docker Compose
