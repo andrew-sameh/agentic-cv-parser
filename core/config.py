@@ -78,6 +78,19 @@ class Settings(BaseSettings):
                 path=self.DATABASE_NAME,
             )
         )
+    @computed_field
+    @cached_property
+    def SYNC_DATABASE_URI(self) -> str:
+        return str(
+            PostgresDsn.build(
+                scheme="postgresql",
+                username=self.DATABASE_USER,
+                password=self.DATABASE_PASSWORD,
+                host=self.DATABASE_HOSTNAME,
+                port=self.DATABASE_PORT,
+                path=self.DATABASE_NAME,
+            )
+        )
 
     @field_validator("BACKEND_CORS_ORIGINS")
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:

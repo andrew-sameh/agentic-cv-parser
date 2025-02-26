@@ -145,33 +145,33 @@ async def update_candidate_endpoint(
     return create_response(candidate, message="Candidate updated successfully")
 
 
-# create candidate
-@router.post(
-    "/manual/",
-    dependencies=[Depends(RateLimiter(times=10, seconds=20))],
-    response_model=ResponseBase[CandidateResponse],
-    status_code=201,
-)
-async def create_candidate_ep(
-    candidate_in: CandidateCreate,
-    request: Request,
-    db_session: DBSessionDep,
-):
-    if await get_candidate_by_email(db_session, candidate_in.email):
-        await logger.error("Candidate already exists", email=candidate_in.email)
-        raise HTTPException(status_code=400, detail="Candidate already exists")
-    if candidate_in.embeddings_namespace:
-        if await get_candidate_by_embeddings_namespace(
-            db_session, candidate_in.embeddings_namespace
-        ):
-            await logger.error(
-                "Candidate embeddings namespace already exists",
-                embeddings_namespace=candidate_in.embeddings_namespace,
-            )
-    await logger.info("Creating candidate", body=candidate_in)
-    candidate = await create_candidate(db_session, candidate_in)
-    await logger.info("Candidate created", candidate_id=candidate.id)
-    return create_response(candidate, message="Candidate created successfully")
+# create candidate manually (Test)
+# @router.post(
+#     "/manual/",
+#     dependencies=[Depends(RateLimiter(times=10, seconds=20))],
+#     response_model=ResponseBase[CandidateResponse],
+#     status_code=201,
+# )
+# async def create_candidate_ep(
+#     candidate_in: CandidateCreate,
+#     request: Request,
+#     db_session: DBSessionDep,
+# ):
+#     if await get_candidate_by_email(db_session, candidate_in.email):
+#         await logger.error("Candidate already exists", email=candidate_in.email)
+#         raise HTTPException(status_code=400, detail="Candidate already exists")
+#     if candidate_in.embeddings_namespace:
+#         if await get_candidate_by_embeddings_namespace(
+#             db_session, candidate_in.embeddings_namespace
+#         ):
+#             await logger.error(
+#                 "Candidate embeddings namespace already exists",
+#                 embeddings_namespace=candidate_in.embeddings_namespace,
+#             )
+#     await logger.info("Creating candidate", body=candidate_in)
+#     candidate = await create_candidate(db_session, candidate_in)
+#     await logger.info("Candidate created", candidate_id=candidate.id)
+#     return create_response(candidate, message="Candidate created successfully")
 
 
 # update candidate

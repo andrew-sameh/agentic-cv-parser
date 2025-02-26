@@ -18,9 +18,9 @@ from agent.prompts import (
     planning_prompt,
 )
 from agent.state import AgentState
-from agent.tools import ask_human_feedback, download_paper, search_papers
+from agent.tools import db, db_query_tool, ask_human_feedback, match_job_description
 from core.config import settings
-from schema.research import StreamInput
+from schema.agent import StreamInput
 from utils.helpers import (
     convert_message_content_to_string,
     format_tools_description,
@@ -28,18 +28,27 @@ from utils.helpers import (
     parse_input,
     remove_tool_calls,
 )
+from langchain_community.agent_toolkits import SQLDatabaseToolkit
+
 
 logger = structlog.get_logger(__name__)
 
 
-class ResearchAgent:
+class CandidatesAgent:
     """Encapsulates LangGraph agent logic."""
 
     def __init__(self):
         self.base_llm = ChatOpenAI(
             model="gpt-4o-mini", temperature=0.0, api_key=settings.OPENAI_API_KEY,streaming=True
         )
-        self.tools = [search_papers, download_paper, ask_human_feedback]
+        self.db_toolkit = SQLDatabaseToolkit(db=db, llm=self.base_llm)
+        self.db_tools = self.db_toolkit.get_tools()
+
+        self.list_tables_tool = next(tool for tool in self.db_tools if tool.name == "sql_db_list_tables")
+        self.get_schema_tool = next(tool for tool in self.db_tools if tool.name == "sql_db_schema")
+
+
+        self.tools = [self.list_tables_tool, self.get_schema_tool, db_query_tool,match_job_description, ask_human_feedback]
         self.tools_dict = {tool.name: tool for tool in self.tools}
         self.decision_making_llm = self.base_llm.with_structured_output(
             DecisionMakingOutput
@@ -78,12 +87,12 @@ class ResearchAgent:
 
     # Decision making node
     def decision_making_node(self, state: AgentState):
-        """Entry point of the workflow. Based on the user query, the model can either respond directly or perform a full research, routing the workflow to the planning node"""
+        """Entry point of the workflow. Based on the user query, the model can either respond directly or perform a db_query or use another tool, routing the workflow to the planning node"""
         system_prompt = SystemMessage(content=decision_making_prompt)
         response: DecisionMakingOutput = self.decision_making_llm.invoke(
             [system_prompt] + state["messages"]
         )
-        output = {"requires_research": response.requires_research}
+        output = {"requires_db_query": response.requires_db_query}
         if response.answer:
             output["messages"] = [AIMessage(content=response.answer)]
         return output
@@ -91,7 +100,7 @@ class ResearchAgent:
     # Task router function
     def router(self, state: AgentState):
         """Router directing the user query to the appropriate branch of the workflow."""
-        return "planning" if state["requires_research"] else "end"
+        return "planning" if state["requires_db_query"] else "end"
 
     # Planning node
     def planning_node(self, state: AgentState):
@@ -208,8 +217,6 @@ class ResearchAgent:
             # Yield tokens streamed from LLMs.
             if (
                 event["event"] == "on_chat_model_stream"
-                and user_input.stream_tokens
-                and "llama_guard" not in event.get("tags", [])
             ):
                 content = remove_tool_calls(event["data"]["chunk"].content)
                 if content:

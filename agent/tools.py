@@ -1,72 +1,38 @@
-import io
-import time
+# import io
+# import time
 
-import pdfplumber
-import urllib3
+# import pdfplumber
+# import urllib3
 from langchain_core.tools import tool
 
-from agent.calls_schema import SearchPapersInput
-from services.core_api_service import CoreAPIWrapper
+# from agent.calls_schema import SearchPapersInput
+# from services.core_api_service import CoreAPIWrapper
+from langchain_community.utilities import SQLDatabase
+from core.config import settings
+from services.documents import document_processor
+# Initialize the database
+db = SQLDatabase.from_uri(settings.SYNC_DATABASE_URI)
 
-
-@tool("search-papers", args_schema=SearchPapersInput)
-def search_papers(query: str, max_papers: int = 1) -> str:
-    """Search for scientific papers using the CORE API.
-
-    Example:
-    {"query": "Attention is all you need", "max_papers": 1}
-
-    Returns:
-        A list of the relevant papers found with the corresponding relevant information.
+@tool("db-query-tool")
+def db_query_tool(query: str) -> str:
     """
-    try:
-        return CoreAPIWrapper(top_k_results=max_papers).search(query)
-    except Exception as e:
-        return f"Error performing paper search: {e}"
-
-
-@tool("download-paper")
-def download_paper(url: str) -> str:
-    """Download a specific scientific paper from a given URL.
-
-    Example:
-    {"url": "https://sample.pdf"}
-
-    Returns:
-        The paper content.
+    Execute a SQL query against the database and get back the result.
+    If the query is not correct, an error message will be returned.
+    If an error is returned, rewrite the query, check the query, and try again.
     """
-    try:
-        http = urllib3.PoolManager(
-            cert_reqs="CERT_NONE",
-        )
+    result = db.run_no_throw(query)
+    if not result:
+        return "Error: Query failed. Please rewrite your query and try again."
+    return result
 
-        # Mock browser headers to avoid 403 error
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
-        }
-        max_retries = 5
-        for attempt in range(max_retries):
-            response = http.request("GET", url, headers=headers)
-            if 200 <= response.status < 300:
-                pdf_file = io.BytesIO(response.data)
-                with pdfplumber.open(pdf_file) as pdf:
-                    text = ""
-                    for page in pdf.pages:
-                        text += page.extract_text() + "\n"
-                return text
-            elif attempt < max_retries - 1:
-                time.sleep(2 ** (attempt + 2))
-            else:
-                raise Exception(
-                    f"Got non 2xx when downloading paper: {response.status_code} {response.text}"
-                )
-    except Exception as e:
-        return f"Error downloading paper: {e}"
-
+@tool("match-job-description")
+def match_job_description(job_description: str) -> str:
+    """    
+    Match the job description with the resume and return the result.
+    Use this tool if the user is asking for a match for a job posting.
+    This tool returns the top 4 most relevant resumes, with a unique identifier for each resume.
+    """
+    return document_processor.retrieve_docs_serialized(job_description)
 
 @tool("ask-human-feedback")
 def ask_human_feedback(question: str) -> str:

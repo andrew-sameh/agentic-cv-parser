@@ -12,10 +12,7 @@ class UserInput(BaseModel):
     )
 class StreamInput(UserInput):
     """User input for streaming the agent's response."""
-    stream_tokens: bool = Field(
-        description="Whether to stream LLM tokens to the client.",
-        default=True,
-    )
+    pass
 def sse_response_example() -> dict[int, Any]:
     return {
         status.HTTP_200_OK: {

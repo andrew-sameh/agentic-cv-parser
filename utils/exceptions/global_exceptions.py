@@ -4,9 +4,26 @@ from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 import structlog
+from sqlalchemy.exc import IntegrityError
 
 logger = structlog.stdlib.get_logger()
 
+async def handle_sqlalchemy_integrity_error(request: Request, exc: IntegrityError):
+    stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    await logger.error(
+        "SQLAlchemy Integrity Error",
+        error=str(exc.__class__.__name__),
+        error_info=stack_trace,
+    )
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error_type": "DatabaseError",
+            "message": "An error occurred while processing the request.",
+            "details": str(exc),
+            "status": "error",
+        },
+    )
 
 async def handle_validation_exception(request: Request, exc: RequestValidationError):
     detail = exc.errors()

@@ -2,27 +2,16 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
-class SearchPapersInput(BaseModel):
-    """Input object to search papers with the CORE API."""
-
-    query: str = Field(description="The query to search for on the selected archive.")
-    max_papers: int = Field(
-        description="The maximum number of papers to return. It's default to 1, but you can increase it up to 10 in case you need to perform a more comprehensive search.",
-        default=1,
-        ge=1,
-        le=10,
-    )
-
 
 class DecisionMakingOutput(BaseModel):
     """Output object of the decision making node."""
 
-    requires_research: bool = Field(
-        description="Whether the user query requires research or not."
+    requires_db_query: bool = Field(
+        description="Whether the user query requires a db query or not."
     )
     answer: Optional[str] = Field(
         default=None,
-        description="The answer to the user query. It should be None if the user query requires research, otherwise it should be a direct answer to the user query.",
+        description="The answer to the user query. It should be None if the user query requires checking the database, otherwise it should be a direct answer to the user query.",
     )
 
 

@@ -2,6 +2,7 @@ import os
 import shutil
 from typing import List
 
+import structlog
 from fastapi import HTTPException, UploadFile
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader
 from langchain_core.documents import Document
@@ -10,11 +11,11 @@ from langchain_core.prompts import (
     MessagesPlaceholder,
     PromptTemplate,
 )
-from langchain_unstructured import UnstructuredLoader
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import structlog
+from langchain_unstructured import UnstructuredLoader
+
 from core.config import settings
 from schema.candidates import CandidateExtraction
 from schema.certificates import CertificationList
@@ -23,8 +24,8 @@ from schema.experience import ExperienceList
 from schema.projects import ProjectList
 from schema.skills import SkillList
 
-
 logger = structlog.stdlib.get_logger()
+
 
 class DocumentProcessor:
     def __init__(self):
@@ -36,6 +37,7 @@ class DocumentProcessor:
         self.embeddings = OpenAIEmbeddings(
             api_key=self.openai_api_key, model=settings.EMBEDDINGS_MODEL
         )
+        self.base_namespace = "resume_documents"
         self.vectorstore = PineconeVectorStore(
             index_name=self.index_name,
             embedding=self.embeddings,
@@ -80,13 +82,17 @@ class DocumentProcessor:
         documents = await loader.aload()
         await logger.info(f"1st Loaded {len(documents)} documents from {file_path}")
         # check if the pdf is empty
-        if file_path.endswith(".pdf") and len(documents) == 1 and documents[0].page_content == "":
+        if (
+            file_path.endswith(".pdf")
+            and len(documents) == 1
+            and documents[0].page_content == ""
+        ):
             await logger.info(f"Empty PDF file: {file_path}")
             loader = UnstructuredLoader(
                 api_key=settings.UNSTRUCTURED_API_KEY,
-                url='https://api.unstructured.io/general/v0/general',
+                url="https://api.unstructured.io/general/v0/general",
                 file_path=file_path,
-                strategy="hi_res", # "fast" or "hi_res"
+                strategy="hi_res",  # "fast" or "hi_res"
                 partition_via_api=True,
                 coordinates=True,
             )
@@ -101,24 +107,23 @@ class DocumentProcessor:
         return "\n\n".join(
             (f"Source: {doc.metadata}\nContent: {doc.page_content}") for doc in docs
         )
-    
-    def combine_docs(self, docs: List[Document], namespace: str) -> Document:
-        content = "\n\n".join(
-            (f"{doc.page_content}") for doc in docs
-        )
-        return Document(page_content=content, metadata={"namespace": namespace})
 
-    async def retrieve_docs(self, query: str, namespace: str) -> str:
-        results = await self.vectorstore.asimilarity_search(
-            query, k=self.top_k, namespace=namespace
+    def combine_docs(self, docs: List[Document], namespace: str) -> Document:
+        content = "\n\n".join((f"{doc.page_content}") for doc in docs)
+        return Document(page_content=content, metadata={"id": namespace})
+
+    def retrieve_docs(self, query: str) -> List[Document]:
+        results = self.vectorstore.similarity_search(
+            query, k=self.top_k, namespace=self.base_namespace
         )
-        serialized = self.serialize_docs(results)
-        return serialized
+        return results
     
-    async def retrieve_by_similarity(self, query: str) -> str:
-        results = await self.vectorstore.asimilarity_search(
-            query, k=self.top_k 
+    def retrieve_docs_serialized(self,query: str) -> str:
+        results = self.vectorstore.similarity_search(
+            query, k=self.top_k, namespace=self.base_namespace
         )
+        if not results:
+            return "No results found"
         serialized = self.serialize_docs(results)
         return serialized
 
@@ -135,12 +140,19 @@ class DocumentProcessor:
             single_doc = self.combine_docs(loaded_docs, namespace)
             documents = self.text_splitter.split_documents([single_doc])
             await logger.info(f"Loaded and split {len(documents)} documents")
-            ids = await self.vectorstore.aadd_documents(documents, namespace=namespace)
+            ids = await self.vectorstore.aadd_documents(documents, namespace=self.base_namespace)
             await logger.info(
                 f"Indexed {len(ids)} documents and added to pinecone with the namespace {namespace}"
             )
             content = self.serialize_docs(documents)
-            candidate, certs, edu, exp, skills, projects = await self.extract_candidate_info(content)
+            (
+                candidate,
+                certs,
+                edu,
+                exp,
+                skills,
+                projects,
+            ) = await self.extract_candidate_info(content)
             await logger.info(f"Extracted candidate info: {candidate}")
 
             return candidate, certs, edu, exp, skills, projects, content
@@ -149,34 +161,34 @@ class DocumentProcessor:
             if os.path.exists(temp_file_path):
                 await logger.info(f"Removing temporary file {temp_file_path}")
                 os.remove(temp_file_path)
-    
+
     async def use_candidate_tool(self, text: str) -> CandidateExtraction:
-        prompt = await self.base_prompt.ainvoke({"text": text}) 
+        prompt = await self.base_prompt.ainvoke({"text": text})
         candidate = await self.candidate_tool.ainvoke(prompt)
         return candidate
 
     async def use_cert_tool(self, text: str) -> CertificationList:
-        prompt = await self.base_prompt.ainvoke({"text": text}) 
+        prompt = await self.base_prompt.ainvoke({"text": text})
         certs = await self.cert_tool.ainvoke(prompt)
         return certs
-    
+
     async def use_edu_tool(self, text: str) -> EducationList:
-        prompt = await self.base_prompt.ainvoke({"text": text}) 
+        prompt = await self.base_prompt.ainvoke({"text": text})
         edu = await self.edu_tool.ainvoke(prompt)
         return edu
-    
+
     async def use_exp_tool(self, text: str) -> ExperienceList:
-        prompt = await self.base_prompt.ainvoke({"text": text}) 
+        prompt = await self.base_prompt.ainvoke({"text": text})
         exp = await self.exp_tool.ainvoke(prompt)
         return exp
-    
+
     async def use_skill_tool(self, text: str) -> SkillList:
-        prompt = await self.base_prompt.ainvoke({"text": text}) 
+        prompt = await self.base_prompt.ainvoke({"text": text})
         skills = await self.skill_tool.ainvoke(prompt)
         return skills
-    
+
     async def use_project_tool(self, text: str) -> ProjectList:
-        prompt = await self.base_prompt.ainvoke({"text": text}) 
+        prompt = await self.base_prompt.ainvoke({"text": text})
         projects = await self.project_tool.ainvoke(prompt)
         return projects
 
@@ -187,6 +199,7 @@ class DocumentProcessor:
         exp = await self.use_exp_tool(text)
         skills = await self.use_skill_tool(text)
         projects = await self.use_project_tool(text)
-        return candidate, certs, edu, exp, skills, projects    
+        return candidate, certs, edu, exp, skills, projects
+
 
 document_processor = DocumentProcessor()

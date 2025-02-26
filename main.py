@@ -15,8 +15,8 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
-
-# from agent.workflow import ResearchAgent
+from sqlalchemy.exc import IntegrityError
+from agent.workflow import CandidatesAgent 
 from api.router import router as api_router
 from core.config import settings
 from utils.exceptions.global_exceptions import (
@@ -25,6 +25,7 @@ from utils.exceptions.global_exceptions import (
     handle_timeout_exception,
     handle_validation_exception,
     handle_value_error,
+    handle_sqlalchemy_integrity_error,
 )
 from utils.limiter import user_id_identifier
 from utils.logger import configure_logger
@@ -39,7 +40,7 @@ async def lifespan(app: FastAPI):
     try:
         redis_client = await get_redis_client()
         await FastAPILimiter.init(redis_client, identifier=user_id_identifier)
-        # app.state.graph = ResearchAgent()
+        app.state.graph = CandidatesAgent()
         yield
 
         await FastAPILimiter.close()
@@ -104,6 +105,7 @@ app.add_exception_handler(asyncio.TimeoutError, handle_timeout_exception)
 app.add_exception_handler(ValueError, handle_value_error)
 app.add_exception_handler(AttributeError, handle_bad_request)
 app.add_exception_handler(HTTPException, handle_http_exception)
+app.add_exception_handler(IntegrityError, handle_sqlalchemy_integrity_error)
 
 app.include_router(api_router)
 

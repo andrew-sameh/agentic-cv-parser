@@ -13,7 +13,7 @@ from langchain_core.messages import (
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 
-from schema.research import ChatMessage, UserInput
+from schema.agent import ChatMessage, UserInput
 
 
 def format_tools_description(tools: list[BaseTool]) -> str:
