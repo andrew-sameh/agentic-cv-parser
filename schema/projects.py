@@ -1,7 +1,30 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import date, datetime
 
+class ProjectExtraction(BaseModel):
+    """
+    Represents a project completed by the candidate.
+    """
+    project_name: Optional[str] = Field(
+        default=None,
+        description="The name of the project (e.g., Inventory Management System, E-commerce Website)."
+    )
+    description: Optional[str] = Field(
+        default=None,
+        description="A brief description of the project, including its purpose, goals, and key features."
+    )
+    technologies_used: Optional[str] = Field(
+        default=None,
+        description="The technologies, tools, or programming languages used in the project (e.g., Python, React, AWS)."
+    )
+    link: Optional[str] = Field(
+        default=None,
+        description="A URL link to the project, if applicable (e.g., GitHub repository, live demo)."
+    )
+class ProjectList(BaseModel):
+    """Extracted data about multiple projects."""
+    projects: List[ProjectExtraction]
 
 class ProjectBase(BaseModel):
     project_name: Optional[str] = None

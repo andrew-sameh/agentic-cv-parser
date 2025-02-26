@@ -22,8 +22,8 @@ class Certification(Base):
 
     certification_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     issuing_organization: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    issue_date: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
-    expiration_date: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
+    issue_date: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    expiration_date: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
 
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),

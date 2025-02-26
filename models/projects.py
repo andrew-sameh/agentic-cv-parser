@@ -6,7 +6,8 @@ from sqlalchemy import (
     Integer,
     String,
     func,
-    ForeignKey
+    ForeignKey,
+    TEXT
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -21,8 +22,8 @@ class Project(Base):
     candidate_id: Mapped[int] = mapped_column(Integer, ForeignKey("candidates.id", ondelete="CASCADE"))
 
     project_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    technologies_used: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    description: Mapped[Optional[TEXT]] = mapped_column(TEXT, nullable=True)
+    technologies_used: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     link: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
 
     updated_at: Mapped[DateTime] = mapped_column(

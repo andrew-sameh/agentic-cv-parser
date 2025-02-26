@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     LLM_MODEL: str = "gpt-4o-mini"
     EMBEDDINGS_MODEL: str = "text-embedding-3-small"
+    UNSTRUCTURED_API_KEY: str
 
     # Embeddings
     PINECONE_API_KEY: str

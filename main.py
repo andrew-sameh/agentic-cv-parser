@@ -15,7 +15,6 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
-from fastapi_pagination import  add_pagination
 
 # from agent.workflow import ResearchAgent
 from api.router import router as api_router
@@ -56,7 +55,6 @@ app = FastAPI(
     docs_url="/",
 )
 
-add_pagination(app)  
 
 app.add_middleware(ServerErrorMiddleware)
 
@@ -111,6 +109,6 @@ app.include_router(api_router)
 
 if __name__ == "__main__":
     if settings.ENV == "dev":
-        uvicorn.run("main:app", host="0.0.0.0", port=8000,log_config=None, reload=True)
+        uvicorn.run("main:app", host="0.0.0.0", port=8001,log_config=None, reload=True)
     else:
         uvicorn.run("main:app", host="0.0.0.0", port=8000, log_config=None)

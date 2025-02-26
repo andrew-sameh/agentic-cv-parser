@@ -7,7 +7,8 @@ from sqlalchemy import (
     Integer,
     String,
     func,
-    ForeignKey
+    ForeignKey,
+    TEXT
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -23,9 +24,9 @@ class Experience(Base):
 
     company_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     role: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    start_date: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
-    end_date: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
-    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    start_date: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    end_date: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    description: Mapped[Optional[TEXT]] = mapped_column(TEXT, nullable=True)
 
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),

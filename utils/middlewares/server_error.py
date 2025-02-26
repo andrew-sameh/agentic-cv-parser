@@ -27,6 +27,7 @@ class ServerErrorMiddleware(BaseHTTPMiddleware):
                 content={
                     "error_type": "ServerError",
                     "message": "An error occurred while processing the request.",
+                    "details": stack_trace,
                     "status": "error",
                 },
             )

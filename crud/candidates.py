@@ -1,27 +1,33 @@
+from typing import List
 from models import Candidate
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, Query
 from schema.candidates import CandidateCreate, CandidateUpdate
-from fastapi_pagination.ext.asyncpg import paginate
-from fastapi_pagination import Params, Page
-
+from sqlalchemy.sql.functions import func
+from sqlalchemy.exc import IntegrityError
 
 async def get_candidates_paginated(
     db_session: AsyncSession,
-    params: Params | None = Params(),
-) -> Page[Candidate]:
+    page: int = 1,
+    size: int = 10,
+) -> List[Candidate]:
     query = select(Candidate).options(
         selectinload(Candidate.certifications),
         selectinload(Candidate.educations),
         selectinload(Candidate.experiences),
         selectinload(Candidate.projects),
         selectinload(Candidate.skills),
-    )
-    output = await paginate(db_session, query, params)
-    return output
+    ) 
+    query = query.limit(size).offset((page - 1) * size)
+    result = await db_session.execute(query)
+    candidates = result.scalars().all() 
+    return candidates
 
+async def get_candidates_count(db_session: AsyncSession) -> int:
+    result = await db_session.execute(select(func.count()).select_from(Candidate))
+    return result.scalar()
 
 async def get_candidate(db_session: AsyncSession, candidate_id: int) -> Candidate:
     candidate = (
@@ -77,11 +83,32 @@ async def get_candidate_by_embeddings_namespace(
 
 
 async def create_candidate(
-    db_session: AsyncSession, candidate: CandidateCreate
+    db_session: AsyncSession, candidate: CandidateCreate, emmbeddings_namespace: str | None = None
 ) -> Candidate:
     candidate = Candidate(**candidate.model_dump())
+    if emmbeddings_namespace:
+        candidate.embeddings_namespace = emmbeddings_namespace
     db_session.add(candidate)
-    await db_session.commit()
+    try:
+        await db_session.commit()
+    except IntegrityError as e:
+        await db_session.rollback()
+        raise e
+
+    # Reload the candidate with all necessary relationships
+    query = (
+        select(Candidate)
+        .options(
+            selectinload(Candidate.educations),
+            selectinload(Candidate.experiences),
+            selectinload(Candidate.projects),
+            selectinload(Candidate.certifications),
+            selectinload(Candidate.skills),
+        )
+        .where(Candidate.id == candidate.id)
+    )
+    result = await db_session.execute(query)
+    candidate = result.scalars().first()
     return candidate
 
 

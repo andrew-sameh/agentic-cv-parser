@@ -21,8 +21,8 @@ class Education(Base):
     institution: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     degree: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     major: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    start_date: Mapped[Optional[str]] = mapped_column(String(15),nullable=True)
-    end_date: Mapped[Optional[str]] = mapped_column(String(15),nullable=True)
+    start_date: Mapped[Optional[str]] = mapped_column(String(30),nullable=True)
+    end_date: Mapped[Optional[str]] = mapped_column(String(30),nullable=True)
 
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
